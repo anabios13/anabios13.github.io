@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Создание урока</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Arimo&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="CSS/lessonStyle.css">
+    <link rel="stylesheet" href="CSS/normalize.css">
+    <link rel="stylesheet" href="CSS/utilTools.css">
+    <link rel="stylesheet" href="CSS/mobileLessonStyle.css">
+    <!-- <script src="https://www.geogebra.org/apps/deployggb.js"></script> -->
+    <script src="JS/cardSwitcher.js" defer></script>
+</head>
+
+<body>
+    <div class="globalContainer">
+        <header>
+            <nav class="lessonNavigation">
+                <div class="container">
+                    <h1 class="projectName">Дроби</h1>
+                    <ul class="userNavigation">
+                        <li>
+                            <a class="saveLink" href="#"> Сохранить и выйти</a>
+                        </li>
+                    </ul>
+                </div>
+
+            </nav>
+        </header>
+        <main>
+            <div class="mainContainer">
+                <div class="workspace">
+                    <div class="lessonPreview">
+                        <!-- <a class="projectWindow" id="cardPlug" href="#">Интерактивная
+                        карточка</a> -->
+                        <!-- <div  id="ggb-element"></div> -->
+
+
+                        <!-- рабочий блок -->
+                        <!-- <iframe class="projectWindow " id="projectFrame" src="" loading="eager">Интерактивная
+                        карточка</iframe> -->
+                        <!-- <iframe class="projectWindow"
+                        data-src="https://www.geogebra.org/material/iframe/id/vkce2jbr/border/888888/sfsb/false/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/false/ctl/false">
+                    </iframe> -->
+                        <!-- 
+
+                        <iframe id="geogebraIframe" class="projectWindow visuallyHidden"
+                            data-src="https://www.geogebra.org/classic/r4ftdev6?embed"></iframe> -->
+
+                        <!-- Вопросы к карте 1 
+                        
+1) Complete the following statement:  If a transversal intersects 2 ________________    ______________, then same-side exterior angles are _____________________.  
+
+2) If the gray angle above measures 110 degrees, what would the measure of its same-side exterior angle be?
+
+3) As you dragged the slider, what transformation(s) took place?   -->
+
+
+                        <iframe class="projectWindow visuallyHidden"
+                            data-src="https://www.geogebra.org/classic/qxgngnrm?embed"></iframe>
+
+
+                        <iframe class="projectWindow visuallyHidden"
+                            data-src="https://www.geogebra.org/classic/dkbst6aq ?embed"></iframe>
+
+                        <!-- В карте 3 интерактивное упражнение на составление трегуольника
+                         -->
+                        <!-- <iframe class="projectWindow visuallyHidden"
+                            data-src="https://www.geogebra.org/classic/ka96wf7q?embed"></iframe>
+
+                        <iframe class="projectWindow visuallyHidden"
+                            data-src="https://www.geogebra.org/classic/jvpk7vup?embed"></iframe>
+
+
+                        <iframe class="projectWindow visuallyHidden"
+                            data-src="https://www.geogebra.org/classic/d32nqzqp?embed"></iframe> -->
+
+                        <iframe class="projectWindow visuallyHidden" data-src=""></iframe>
+
+                        <div class="projectWindowMessage visuallyHidden" id="messageDiv">Выберите карту из списка</div>
+                        <div class=" fileManagmentPanel">
+                            <button id="newFile">Создание нового файла</button>
+                            <button id="addExistedFile">Добавление существующего</button>
+                        </div>
+                        <textarea class="lessonText" name="" id="" cols="30" rows="10"
+                            placeholder="Введите ваш текст..."></textarea>
+                    </div>
+                    <div class="workspaceManagmentButtons">
+                        <button class="previousCard">Предыдущая карта</button>
+                        <button class="nextCard">Следующая карта</button>
+                        <button id="lessonPreview">Кнопка предпросмотра</button>
+                    </div>
+                </div>
+                <div class="slideNavigation">
+                    <div class="cardList">
+                        <input type="radio" id="card1" name="contact" value="card1" />
+                        <label for="card1">Карта1</label>
+
+                        <input type="radio" id="card2" name="contact" value="card2" />
+                        <label for="card2">Карта2</label>
+
+                        <!-- <input type="radio" id="card3" name="contact" value="card3" />
+                        <label for="card3">Карта3</label>
+
+                        <input type="radio" id="card4" name="contact" value="card4" />
+                        <label for="card4">Карта4</label>
+
+                        <input type="radio" id="card5" name="contact" value="card5" />
+                        <label for="card5">Карта5</label> -->
+
+                    </div>
+                    <div class="slideControlPanel">
+                        <button id="minimize" type="button">Свернуть</button>
+                        <button id="add" type="button">Добавить</button>
+                        <button id="delete" type="button">Удалить</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>
