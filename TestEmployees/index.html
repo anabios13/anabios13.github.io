@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Тест</h1>
+        <!-- Элемент для ввода ФИО -->
+        <div class="fullname-input">
+            <label for="fullname">Введите ФИО:</label>
+            <input type="text" id="fullname">
+            <button id="start-test">Начать тест</button>
+        </div>
+        <div class="question-list">
+            <!-- Список вопросов -->
+            <div class="question">
+                <img src="image.png" alt="Вопрос 1">
+                <p>Вопрос 1: Правильный ответ 1</p>
+                <div class="options">
+                    <button class="option" data-correct="true">Ответ 1</button>
+                    <button class="option">Ответ 2</button>
+                    <button class="option">Ответ 3</button>
+                    <button class="option">Ответ 4</button>
+                </div>
+            </div>
+            <div class="question">
+                <img src="image.png" alt="Вопрос 1">
+                <p>Вопрос 1: Правильный ответ 2</p>
+                <div class="options">
+                    <button class="option">Ответ 1</button>
+                    <button class="option" data-correct="true">Ответ 2</button>
+                    <button class="option">Ответ 3</button>
+                    <button class="option">Ответ 4</button>
+                </div>
+            </div>
+            <div class="question">
+                <img src="image.png" alt="Вопрос 1">
+                <p>Вопрос 1: Правильный ответ 3</p>
+                <div class="options">
+                    <button class="option">Ответ 1</button>
+                    <button class="option">Ответ 2</button>
+                    <button class="option" data-correct="true">Ответ 3</button>
+                    <button class="option">Ответ 4</button>
+                </div>
+            </div>
+            <!-- Добавьте другие вопросы аналогично -->
+        </div>
+        <div class="result" style="display: none;">
+            <!-- Результаты теста -->
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
