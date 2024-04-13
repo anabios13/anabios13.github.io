@@ -47,7 +47,7 @@ h1 {
 }
 
 .question img {
-    max-width: 100%;
+    width: 100%;
     height: auto;
     margin-bottom: 10px;
     border-radius: 5px;
@@ -60,13 +60,14 @@ p {
 }
 
 .options {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 10px;
     margin-bottom: 20px;
 }
 
 .option {
+    width: 100%;
     padding: 15px;
     border: 1px solid #ccc;
     border-radius: 5px;

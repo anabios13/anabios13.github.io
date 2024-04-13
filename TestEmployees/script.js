@@ -7,22 +7,58 @@ document.addEventListener("DOMContentLoaded", function () {
   const questionList = document.querySelector(".question-list");
 
   let score = 0;
+  let numberOfQuestionsToShow = 10; // Specify the number of questions to display
 
-  // Скрыть список вопросов при загрузке страницы
+  // Hide question list and result container initially
   questionList.style.display = "none";
+  resultContainer.style.display = "none";
 
   startButton.addEventListener("click", function () {
     const fullname = fullnameField.value.trim();
 
     if (fullname === "") {
-      alert("Пожалуйста, введите ваше ФИО.");
+      alert("Please enter your full name.");
       return;
     }
 
-    // Показать список вопросов и скрыть поле ввода ФИО
+    // Show question list and hide full name input
     questionList.style.display = "block";
     fullnameInput.style.display = "none";
+
+    // Shuffle questions and options
+    shuffleQuestionsAndOptions();
+
+    // Show only a certain number of questions
+    const shownQuestionsIndexes = getRandomIndexes(
+      numberOfQuestionsToShow,
+      questions.length
+    );
+    questions.forEach((question, index) => {
+      if (!shownQuestionsIndexes.includes(index)) {
+        question.style.display = "none";
+      }
+    });
   });
+
+  function shuffleQuestionsAndOptions() {
+    // Shuffle questions
+    questionList.innerHTML = "";
+    const shuffledQuestions = Array.from(questions).sort(
+      () => Math.random() - 0.5
+    );
+
+    // Shuffle options in each question
+    shuffledQuestions.forEach((question) => {
+      const optionsContainer = question.querySelector(".options");
+      const shuffledOptions = Array.from(optionsContainer.children).sort(
+        () => Math.random() - 0.5
+      );
+      shuffledOptions.forEach((option) => {
+        optionsContainer.appendChild(option);
+      });
+      questionList.appendChild(question);
+    });
+  }
 
   questions.forEach((question) => {
     const options = question.querySelectorAll(".option");
@@ -45,10 +81,9 @@ document.addEventListener("DOMContentLoaded", function () {
             }
           });
 
-          const allAnswered = Array.from(questions).every((question) =>
-            question.classList.contains("answered")
-          );
-          if (allAnswered) {
+          const answeredQuestions =
+            document.querySelectorAll(".question.answered").length;
+          if (answeredQuestions === numberOfQuestionsToShow) {
             showResult();
           }
         }
@@ -57,8 +92,19 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   function showResult() {
-    const totalQuestions = questions.length;
+    const totalQuestions = numberOfQuestionsToShow;
     resultContainer.innerHTML = `<p>Результат: ${score} из ${totalQuestions}</p>`;
     resultContainer.style.display = "block";
+  }
+
+  function getRandomIndexes(count, max) {
+    const indexes = [];
+    while (indexes.length < count) {
+      const randomIndex = Math.floor(Math.random() * max);
+      if (!indexes.includes(randomIndex)) {
+        indexes.push(randomIndex);
+      }
+    }
+    return indexes;
   }
 });
