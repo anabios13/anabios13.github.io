@@ -154,17 +154,20 @@ document.addEventListener("DOMContentLoaded", function () {
       try {
         let myDateTime = new Date().toLocaleString();
         myDateTime = myDateTime.replace(/['",]/g, "");
-        const response = fetch("https://initial-java.onrender.com/saveResult", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: fullnameField.value.trim(),
-            score: score,
-            dateTime: myDateTime,
-          }),
-        });
+        const response = fetch(
+          "https://initial-java2.onrender.com/saveResult",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: fullnameField.value.trim(),
+              score: score,
+              dateTime: myDateTime,
+            }),
+          }
+        );
         const data = response.toLocaleString();
         console.log(data);
       } catch (error) {
