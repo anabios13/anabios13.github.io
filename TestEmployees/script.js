@@ -7,11 +7,11 @@ document.addEventListener("DOMContentLoaded", function () {
   const startButton = document.getElementById("start-test");
   const fullnameField = document.getElementById("fullname");
   const questionList = document.querySelector(".question-list");
-  const retryButton = document.createElement("button"); // Создаем кнопку для повторного прохождения теста
-  retryButton.textContent = "Пройти тест заново"; // Устанавливаем текст кнопки
-  retryButton.style.display = "none"; // Скрываем кнопку по умолчанию
-  retryButton.classList.add("resetTestBtn");
-  retryButton.addEventListener("click", resetTest); // Добавляем обработчик события при клике на кнопку
+  //const retryButton = document.createElement("button"); // Создаем кнопку для повторного прохождения теста
+  // retryButton.textContent = "Пройти тест заново"; // Устанавливаем текст кнопки
+  // retryButton.style.display = "none"; // Скрываем кнопку по умолчанию
+  // retryButton.classList.add("resetTestBtn");
+  // retryButton.addEventListener("click", resetTest); // Добавляем обработчик события при клике на кнопку
 
   let score = 0;
   let numberOfQuestionsToShow = 10; // Specify the number of questions to display
@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Show question list and hide full name input
     questionList.style.display = "block";
     fullnameInput.style.display = "none";
-    retryButton.style.display = "none"; // Скрываем кнопку повторного прохождения теста
+    //retryButton.style.display = "none"; // Скрываем кнопку повторного прохождения теста
 
     // Shuffle questions and options
     shuffleQuestionsAndOptions();
@@ -144,8 +144,8 @@ document.addEventListener("DOMContentLoaded", function () {
     if (score < 4) {
       resultContainer.innerHTML += "<p>Тест не пройден</p>";
 
-      resultContainer.appendChild(retryButton); // Показываем кнопку повторного прохождения теста
-      retryButton.style.display = "block";
+      //resultContainer.appendChild(retryButton); // Показываем кнопку повторного прохождения теста
+      //retryButton.style.display = "block";
     } else {
       // Если результаты удовлетворительные, делаем POST-запрос на сервер
 
