@@ -13,7 +13,7 @@
         <h1>Конвертер монет ТикТок</h1>
         <div class="input-section">
             <label for="usd">Монеты в Тиктоке:</label>
-            <input type="number" id="usd" placeholder="Введите Количество монет">
+            <input type="text" id="usd" placeholder="Введите Количество монет" oninput="formatNumber(this)">
         </div>
         <button id="convert-btn">Конвертировать</button>
         <div class="result">

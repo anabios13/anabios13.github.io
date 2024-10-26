@@ -1,5 +1,6 @@
 document.getElementById('convert-btn').addEventListener('click', () => {
-    const coinAmount = document.getElementById('usd').value;
+    const coinAmountWithSeparators = document.getElementById('usd').value;
+    const coinAmount = coinAmountWithSeparators.replace(/,/g, ''); // Убираем запятые
     const usdAmount = (coinAmount/200);
   
     // API НБ РБ для получения текущего курса USD к BYN
@@ -17,4 +18,13 @@ document.getElementById('convert-btn').addEventListener('click', () => {
       })
       .catch(error => console.error('Ошибка получения данных:', error));
   });
+
+
+  function formatNumber(input) {
+    // Удаляем все нецифровые символы, чтобы избежать проблем с повторными запятыми
+    let value = input.value.replace(/\D/g, '');
+
+    // Добавляем разделитель тысяч
+    input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
   
