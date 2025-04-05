@@ -1,0 +1,1976 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <!-- Мета-тег для корректного отображения на мобильных устройствах -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Планировщик путешествий с сохранением маршрутов</title>
+    <!-- Подключаем стили Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        /* Основные стили */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        /* Компоновка для десктопа */
+        #sidebar {
+            width: 30%;
+            float: left;
+            padding: 20px;
+            box-sizing: border-box;
+            border-right: 1px solid #ccc;
+            height: 100vh;
+            overflow-y: auto;
+            background-color: white;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #map {
+            height: 100vh;
+            width: 70%;
+            float: right;
+        }
+
+        h2,
+        h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        #searchResults .result-item {
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+        }
+
+        #searchResults .result-item:hover {
+            background: #f0f0f0;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            margin-bottom: 5px;
+        }
+
+        .itinerary-day {
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .itinerary-day:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+        .delete-btn {
+            color: #dc3545;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        /* Стили для блока поиска */
+        .search-group {
+            margin-bottom: 15px;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .search-group input,
+        .search-group select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        /* Мобильная адаптация */
+        @media (max-width: 768px) {
+
+            html,
+            body {
+                height: 100%;
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+            }
+
+            #sidebar {
+                width: 100%;
+                height: 70%;
+                position: fixed;
+                top: 0;
+                left: 0;
+                z-index: 1000;
+                background: white;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                border-bottom: 1px solid #ccc;
+            }
+
+            #map {
+                width: 100%;
+                height: 30%;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                z-index: 999;
+            }
+
+            .add-day-btn {
+                position: fixed;
+                bottom: 15px;
+                right: 15px;
+                width: 45px;
+                height: 45px;
+                border-radius: 50%;
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                font-size: 20px;
+                cursor: pointer;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+                z-index: 1001;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .search-group {
+                margin-bottom: 8px;
+                padding: 8px;
+            }
+
+            .itinerary-day {
+                padding: 8px;
+                margin-bottom: 8px;
+            }
+
+            /* Оптимизация для iOS */
+            @supports (-webkit-touch-callout: none) {
+                #sidebar {
+                    height: calc(70% - env(safe-area-inset-top));
+                    padding-top: env(safe-area-inset-top);
+                }
+
+                #map {
+                    height: calc(30% - env(safe-area-inset-bottom));
+                    padding-bottom: env(safe-area-inset-bottom);
+                }
+
+                .add-day-btn {
+                    bottom: calc(15px + env(safe-area-inset-bottom));
+                }
+            }
+        }
+
+        /* Стили для планировщика */
+        .schedule-planner {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .add-day-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .add-day-btn:hover {
+            background-color: #45a049;
+        }
+
+        .date-picker {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+            display: none;
+        }
+
+        .date-picker input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+
+        .date-picker-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .date-picker-buttons button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .date-picker-buttons .confirm {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .date-picker-buttons .cancel {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .schedule-day {
+            background-color: white;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .schedule-day:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .schedule-day-header {
+            padding: 15px 20px;
+            background-color: #f8f9fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .schedule-day-header:hover {
+            background-color: #e9ecef;
+        }
+
+        .day-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .schedule-day-content {
+            padding: 20px;
+        }
+
+        .time-input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: center;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .time-input {
+            width: 120px;
+            padding: 10px;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 1.1em;
+            text-align: center;
+            background-color: white;
+            color: #2c3e50;
+            transition: all 0.3s ease;
+        }
+
+        .time-input:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+            outline: none;
+        }
+
+        .place-selector {
+            flex-grow: 1;
+            position: relative;
+            min-width: 0;
+        }
+
+        .place-selector select {
+            width: 100%;
+            padding: 10px 35px 10px 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 1.1em;
+            background-color: white;
+            color: #2c3e50;
+            transition: all 0.3s ease;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232c3e50' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 15px;
+            cursor: pointer;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Стили для опций в выпадающем списке */
+        .place-selector select option {
+            padding: 10px;
+            font-size: 1em;
+            max-width: 100%;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+
+        @media (max-width: 768px) {
+            .time-input-group {
+                flex-direction: column;
+                gap: 10px;
+                padding: 12px;
+            }
+
+            .time-input {
+                width: 100%;
+                font-size: 1em;
+                padding: 8px;
+            }
+
+            .place-selector {
+                width: 100%;
+            }
+
+            .place-selector select {
+                width: 100%;
+                padding: 8px 30px 8px 12px;
+                font-size: 1em;
+                background-size: 12px;
+                max-width: 100%;
+            }
+
+            /* Специальные стили для мобильных устройств */
+            .place-selector select option {
+                padding: 8px 12px;
+                font-size: 0.9em;
+                max-width: 100%;
+                white-space: normal;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+            }
+        }
+
+        /* Стили для выпадающего списка на iOS */
+        @supports (-webkit-touch-callout: none) {
+            .place-selector select {
+                padding-right: 40px;
+            }
+
+            .place-selector select option {
+                padding: 8px 12px;
+                font-size: 0.9em;
+                max-width: 100%;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+        }
+
+        .add-plan-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .add-plan-btn:hover {
+            background-color: #45a049;
+            transform: translateY(-1px);
+        }
+
+        .day-plan {
+            margin-top: 20px;
+            background-color: white;
+            border-radius: 8px;
+            padding: 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .plan-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .plan-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid #e9ecef;
+        }
+
+        .plan-item:hover {
+            background-color: #e9ecef;
+            transform: translateX(3px);
+        }
+
+        .plan-time {
+            font-weight: 600;
+            color: #4CAF50;
+            min-width: 90px;
+            font-size: 1.1em;
+            text-align: center;
+        }
+
+        .plan-place {
+            flex-grow: 1;
+            margin: 0 15px;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+
+        .plan-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+
+        @media (max-width: 768px) {
+            .schedule-day {
+                margin-bottom: 15px;
+                border-radius: 10px;
+            }
+
+            .schedule-day-header {
+                padding: 12px 15px;
+            }
+
+            .time-input-group {
+                flex-direction: column;
+                gap: 10px;
+                padding: 12px;
+            }
+
+            .time-input {
+                width: 100%;
+                font-size: 1em;
+            }
+
+            .place-selector select {
+                font-size: 1em;
+            }
+
+            .plan-item {
+                padding: 10px 12px;
+            }
+
+            .plan-time {
+                min-width: 80px;
+                font-size: 1em;
+            }
+
+            .plan-place {
+                font-size: 1em;
+            }
+        }
+
+        /* Стили для списка мест */
+        .places-selector {
+            margin-top: 15px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .places-header {
+            padding: 12px 15px;
+            background-color: #e9ecef;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .places-header:hover {
+            background-color: #dee2e6;
+        }
+
+        .places-list {
+            max-height: 300px;
+            overflow-y: auto;
+            transition: max-height 0.3s ease;
+        }
+
+        .places-list.collapsed {
+            max-height: 0;
+        }
+
+        .toggle-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        /* Стили для сохраненных точек */
+        .saved-points {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .saved-points h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+
+        .points-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .point-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 1px solid #e9ecef;
+        }
+
+        .point-item:hover {
+            transform: translateX(3px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-color: #dee2e6;
+        }
+
+        .point-number {
+            background-color: #e9ecef;
+            color: #495057;
+            min-width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-size: 0.9em;
+            font-weight: 500;
+            border: 1px solid #dee2e6;
+            flex-shrink: 0;
+        }
+
+        .point-content {
+            flex-grow: 1;
+            margin-right: 10px;
+            cursor: pointer;
+            padding: 5px 0;
+        }
+
+        .point-content:hover {
+            color: #007bff;
+        }
+
+        .point-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .confirm-dialog-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            cursor: pointer;
+        }
+
+        .confirm-dialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            max-width: 90%;
+            width: 320px;
+        }
+
+        .confirm-dialog p {
+            margin: 0 0 20px 0;
+            font-size: 1.1em;
+            color: #495057;
+        }
+
+        .confirm-dialog-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .confirm-dialog-buttons .button {
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .point-item {
+                padding: 10px 12px;
+            }
+
+            .point-number {
+                width: 24px;
+                height: 24px;
+                font-size: 0.8em;
+            }
+
+            .confirm-dialog {
+                width: 90%;
+                padding: 20px;
+            }
+        }
+
+        /* Стили для временных слотов */
+        .time-slot {
+            background-color: white;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .time-slot-header {
+            padding: 12px 15px;
+            background-color: #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .time-slot-header:hover {
+            background-color: #dee2e6;
+        }
+
+        .time-slot-content {
+            padding: 15px;
+            transition: max-height 0.3s ease;
+        }
+
+        .time-slot-content.collapsed {
+            max-height: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .add-time-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .add-time-btn:hover {
+            background-color: #45a049;
+        }
+
+        .time-slot-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .time-display {
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .day-summary {
+            margin-top: 20px;
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .day-summary h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #333;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #dee2e6;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+
+        .summary-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .summary-time {
+            font-weight: bold;
+            color: #4CAF50;
+            min-width: 80px;
+        }
+
+        .summary-place {
+            flex-grow: 1;
+            margin: 0 15px;
+        }
+
+        .summary-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Стили для маркеров станций метро */
+        .metro-station-marker {
+            width: 12px;
+            height: 12px;
+            background-color: #FF0000;
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="sidebar">
+        <h2>Планировщик путешествий</h2>
+
+        <!-- Раздел поиска с полем для страны -->
+        <h3>Добавить точку</h3>
+        <div class="search-group">
+            <input type="text" id="searchInput" placeholder="Введите название места" style="width: 60%;">
+            <select id="pointType">
+                <option value="attraction">Точка интереса</option>
+                <option value="apartment">Апартаменты</option>
+            </select>
+            <button id="searchButton" class="button">Искать</button>
+        </div>
+        <div class="search-group">
+            <label for="countryFilter">Страна (любая форма):</label>
+            <input type="text" id="countryFilter" placeholder="Например, Россия, Germany или USA" style="width: 60%;">
+        </div>
+        <div id="searchResults"></div>
+
+        <!-- Сохранённые точки -->
+        <div class="saved-points">
+            <h3>Сохранённые точки</h3>
+            <div>
+                <strong>Апартаменты:</strong>
+                <div id="apartmentDisplay" class="point-item">
+                    <div class="point-content">Не задано</div>
+                </div>
+            </div>
+            <div>
+                <strong>Точки интереса:</strong>
+                <ul id="attractionsList" class="points-list"></ul>
+            </div>
+        </div>
+
+        <!-- Диалог подтверждения удаления -->
+        <div id="confirmDialogOverlay" class="confirm-dialog-overlay"></div>
+        <div id="confirmDialog" class="confirm-dialog">
+            <p>Вы уверены, что хотите удалить эту точку?</p>
+            <div class="confirm-dialog-buttons">
+                <button onclick="confirmDelete(false)" class="button" style="background-color: #6c757d;">Отмена</button>
+                <button onclick="confirmDelete(true)" class="button" style="background-color: #dc3545;">Удалить</button>
+            </div>
+        </div>
+
+        <!-- Планирование маршрута -->
+        <h3 style="display: none;">Планирование маршрута</h3>
+        <div style="display: none;">
+            <label for="daysInput">Количество дней:</label>
+            <input type="number" id="daysInput" min="1" value="1" style="width: 50px;">
+            <button id="planButton" class="button">Планировать маршрут</button>
+        </div>
+        <div id="itineraryDetails"></div>
+
+        <!-- Планировщик маршрутов -->
+        <div class="schedule-planner">
+            <h3>Планировщик маршрутов</h3>
+            <div class="calendar-container">
+                <div class="calendar">
+                    <div class="calendar-header">
+                        <button onclick="prevMonth()">←</button>
+                        <span id="currentMonth"></span>
+                        <button onclick="nextMonth()">→</button>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid"></div>
+                </div>
+            </div>
+            <div id="scheduleContainer"></div>
+        </div>
+    </div>
+    <div id="map"></div>
+
+    <!-- Подключаем библиотеку Leaflet -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        /*******************************
+         * Инициализация карты и слоёв
+         *******************************/
+        var map = L.map('map').setView([25.2048, 55.2708], 12);
+
+        // Основной слой карты
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Слой с метро (используем OSM транспортный слой)
+        L.tileLayer('https://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey=9b7b2b1b2b1b2b1b2b1b2b1b2b1b2b1b', {
+            attribution: '&copy; <a href="https://www.thunderforest.com/">Thunderforest</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            opacity: 0.5
+        }).addTo(map);
+
+        // Слой метро Дубая
+        var metroLayer = L.layerGroup().addTo(map);
+
+        // Определяем цвета линий метро
+        const metroLines = {
+            'Red Line': {
+                color: '#FF0000',
+                stations: []
+            },
+            'Green Line': {
+                color: '#00AA00',
+                stations: []
+            }
+        };
+
+        // Загрузка данных метро Дубая из Overpass API
+        fetch('https://overpass-api.de/api/interpreter', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `
+                [out:json][timeout:25];
+                area["name:en"="Dubai"]->.searchArea;
+                (
+                    way["railway"="subway"](area.searchArea);
+                    node["railway"="station"](area.searchArea);
+                    node["railway"="subway_entrance"](area.searchArea);
+                );
+                out body;
+                >;
+                out skel qt;
+            `
+        })
+            .then(response => response.json())
+            .then(data => {
+                // Сначала собираем все станции
+                const stations = {};
+                data.elements.forEach(element => {
+                    if (element.type === 'node' && element.tags &&
+                        (element.tags.railway === 'station' || element.tags.railway === 'subway_entrance')) {
+                        const stationName = element.tags.name || 'Unnamed Station';
+                        stations[stationName] = {
+                            lat: element.lat,
+                            lon: element.lon,
+                            name: stationName,
+                            line: element.tags.line || 'Unknown'
+                        };
+                    }
+                });
+
+                // Затем обрабатываем линии метро
+                data.elements.forEach(element => {
+                    if (element.type === 'way' && element.tags && element.tags.railway === 'subway') {
+                        const lineName = element.tags.name || 'Unknown Line';
+                        const lineColor = element.tags.colour || '#FF0000';
+
+                        const coordinates = element.nodes.map(nodeId => {
+                            const node = data.elements.find(e => e.type === 'node' && e.id === nodeId);
+                            return node ? [node.lat, node.lon] : null;
+                        }).filter(coord => coord !== null);
+
+                        if (coordinates.length > 1) {
+                            // Определяем цвет линии
+                            let color;
+                            if (lineName.includes('Red') || lineName.includes('красная')) {
+                                color = metroLines['Red Line'].color;
+                            } else if (lineName.includes('Green') || lineName.includes('зеленая')) {
+                                color = metroLines['Green Line'].color;
+                            } else {
+                                color = lineColor;
+                            }
+
+                            // Создаем линию метро
+                            L.polyline(coordinates, {
+                                color: color,
+                                weight: 4,
+                                opacity: 0.8
+                            }).addTo(metroLayer);
+
+                            // Добавляем станции к соответствующей линии
+                            coordinates.forEach(coord => {
+                                const station = Object.values(stations).find(s =>
+                                    Math.abs(s.lat - coord[0]) < 0.0001 &&
+                                    Math.abs(s.lon - coord[1]) < 0.0001
+                                );
+                                if (station) {
+                                    if (lineName.includes('Red') || lineName.includes('красная')) {
+                                        metroLines['Red Line'].stations.push(station);
+                                    } else if (lineName.includes('Green') || lineName.includes('зеленая')) {
+                                        metroLines['Green Line'].stations.push(station);
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+
+                // Добавляем станции на карту с соответствующими цветами
+                Object.entries(metroLines).forEach(([lineName, lineData]) => {
+                    lineData.stations.forEach(station => {
+                        const stationIcon = L.divIcon({
+                            className: 'metro-station-icon',
+                            html: `<div class="metro-station-marker" style="background-color: ${lineData.color}"></div>`,
+                            iconSize: [12, 12],
+                            iconAnchor: [6, 6]
+                        });
+
+                        const marker = L.marker([station.lat, station.lon], {
+                            icon: stationIcon
+                        });
+
+                        marker.bindPopup(`
+                        <b>${station.name}</b><br>
+                        <span style="color: ${lineData.color}">${lineName}</span>
+                    `);
+
+                        marker.addTo(metroLayer);
+                    });
+                });
+            })
+            .catch(error => {
+                console.error('Ошибка при загрузке данных метро:', error);
+            });
+
+        // Стили для маркеров станций метро
+        const style = document.createElement('style');
+        style.textContent = `
+            .metro-station-marker {
+                width: 12px;
+                height: 12px;
+                border: 2px solid white;
+                border-radius: 50%;
+                box-shadow: 0 0 4px rgba(0,0,0,0.5);
+            }
+        `;
+        document.head.appendChild(style);
+
+        var markersLayer = L.layerGroup().addTo(map);
+        var routesLayer = L.layerGroup().addTo(map);
+        // Массив для хранения слоев маршрутов по дням
+        var dayRoutes = [];
+
+        /*******************************
+         * Глобальная переменная для сохранённых маршрутов
+         *******************************/
+        var savedRoutes = [];
+
+        /*******************************
+         * Состояние приложения (точки)
+         *******************************/
+        var state = {
+            apartment: null,      // Объект: { name, lat, lon, marker }
+            attractions: []       // Массив объектов: { name, lat, lon, marker }
+        };
+
+        /*******************************
+         * Функции сохранения/загрузки точек в localStorage
+         *******************************/
+        function saveState() {
+            var saveData = {
+                apartment: state.apartment ? { name: state.apartment.name, lat: state.apartment.lat, lon: state.apartment.lon } : null,
+                attractions: state.attractions.map(function (pt) {
+                    return { name: pt.name, lat: pt.lat, lon: pt.lon };
+                })
+            };
+            localStorage.setItem("travelPlannerState", JSON.stringify(saveData));
+        }
+        function loadState() {
+            var data = localStorage.getItem("travelPlannerState");
+            if (data) {
+                try {
+                    var saved = JSON.parse(data);
+                    if (saved.apartment) {
+                        setApartment(saved.apartment, false);
+                    }
+                    if (saved.attractions && saved.attractions.length) {
+                        saved.attractions.forEach(function (pt) {
+                            addAttraction(pt, false);
+                        });
+                    }
+                    updateSavedPointsUI();
+                } catch (e) {
+                    console.error("Ошибка парсинга сохранённых данных", e);
+                }
+            }
+        }
+
+        /*******************************
+         * Сохранение маршрутов в localStorage
+         *******************************/
+        function saveRoutes() {
+            localStorage.setItem("travelPlannerRoutes", JSON.stringify(savedRoutes));
+        }
+
+        /*******************************
+         * Загрузка маршрутов из localStorage
+         *******************************/
+        function loadRoutesFromStorage() {
+            var data = localStorage.getItem("travelPlannerRoutes");
+            if (data) {
+                try {
+                    savedRoutes = JSON.parse(data);
+                    var itineraryDiv = document.getElementById("itineraryDetails");
+                    if (!itineraryDiv) return;
+
+                    itineraryDiv.innerHTML = "";
+                    savedRoutes.forEach(function (routeObj, index) {
+                        if (!routeObj || !routeObj.geojson || !routeObj.points) return;
+
+                        // Создаем слой маршрута из сохранённого GeoJSON
+                        var routeLayer = L.geoJSON(routeObj.geojson, {
+                            style: { color: routeObj.color || "#FF6B6B", weight: 4, opacity: 0.7 }
+                        }).addTo(routesLayer);
+                        dayRoutes[index] = routeLayer;
+
+                        // Обновляем боковую панель с информацией
+                        var dayDiv = document.createElement("div");
+                        dayDiv.className = "itinerary-day";
+                        dayDiv.style.borderLeft = `4px solid ${routeObj.color || "#FF6B6B"}`;
+
+                        // Создаем список мест для этого дня
+                        var placesList = routeObj.points.map((place, idx) =>
+                            `${idx + 1}. ${place.name}`
+                        ).join('<br>');
+
+                        dayDiv.innerHTML = `
+                            <div class="day-header">
+                                <b>День ${index + 1}:</b>
+                                <div class="day-stats">
+                                    Точек: ${routeObj.points.length}<br>
+                                    Расстояние: ${(routeObj.distance || 0).toFixed(2)} км<br>
+                                    Время в пути: ${(routeObj.duration || 0).toFixed(0)} мин<br>
+                                    Примерная стоимость: $${(routeObj.cost || 0).toFixed(2)}
+                                </div>
+                            </div>
+                            <div class="places-list">
+                                <b>Места:</b><br>
+                                ${placesList}
+                            </div>
+                        `;
+
+                        dayDiv.addEventListener("click", function () {
+                            highlightRoute(index);
+                        });
+                        itineraryDiv.appendChild(dayDiv);
+                    });
+                } catch (e) {
+                    console.error("Ошибка парсинга сохранённых маршрутов", e);
+                    // Очищаем невалидные данные
+                    localStorage.removeItem("travelPlannerRoutes");
+                    savedRoutes = [];
+                }
+            }
+        }
+
+        /*******************************
+         * Глобальные переменные для диалога подтверждения
+         *******************************/
+        let pendingDelete = {
+            type: null, // 'apartment' или 'attraction'
+            index: null
+        };
+
+        function showConfirmDialog(type, index) {
+            pendingDelete.type = type;
+            pendingDelete.index = index;
+            document.getElementById('confirmDialogOverlay').style.display = 'block';
+            document.getElementById('confirmDialog').style.display = 'block';
+
+            // Добавляем обработчик клика вне диалога
+            document.getElementById('confirmDialogOverlay').onclick = function (e) {
+                if (e.target === this) {
+                    confirmDelete(false);
+                }
+            };
+        }
+
+        function confirmDelete(confirmed) {
+            document.getElementById('confirmDialogOverlay').style.display = 'none';
+            document.getElementById('confirmDialog').style.display = 'none';
+            document.getElementById('confirmDialogOverlay').onclick = null;
+
+            if (confirmed) {
+                if (pendingDelete.type === 'apartment') {
+                    removeApartment();
+                } else if (pendingDelete.type === 'attraction') {
+                    removeAttraction(pendingDelete.index);
+                }
+            }
+        }
+
+        /*******************************
+         * Обновление UI сохранённых точек
+         *******************************/
+        function updateSavedPointsUI() {
+            var aptDiv = document.getElementById("apartmentDisplay");
+            if (state.apartment) {
+                aptDiv.innerHTML = `
+                    <div class="point-content" onclick="focusOnPoint(null, true)">${state.apartment.name}</div>
+                    <div class="point-actions">
+                        <button class="delete-btn" onclick="showConfirmDialog('apartment', null)">Удалить</button>
+                    </div>
+                `;
+            } else {
+                aptDiv.innerHTML = '<div class="point-content">Не задано</div>';
+            }
+
+            var list = document.getElementById("attractionsList");
+            list.innerHTML = "";
+            state.attractions.forEach(function (pt, index) {
+                var li = document.createElement("li");
+                li.className = "point-item";
+                li.innerHTML = `
+                    <div class="point-number">${String(index + 1).padStart(2, '0')}</div>
+                    <div class="point-content" onclick="focusOnPoint(${index})">${pt.name}</div>
+                    <div class="point-actions">
+                        <button class="delete-btn" onclick="showConfirmDialog('attraction', ${index})">Удалить</button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        /*******************************
+         * Удаление точек
+         *******************************/
+        function removeApartment() {
+            if (state.apartment && state.apartment.marker) {
+                markersLayer.removeLayer(state.apartment.marker);
+            }
+            state.apartment = null;
+            updateSavedPointsUI();
+            saveState();
+        }
+        function removeAttraction(index) {
+            if (state.attractions[index] && state.attractions[index].marker) {
+                markersLayer.removeLayer(state.attractions[index].marker);
+            }
+            state.attractions.splice(index, 1);
+            updateSavedPointsUI();
+            saveState();
+        }
+
+        /*******************************
+         * Добавление точек
+         *******************************/
+        function setApartment(point, save = true) {
+            if (state.apartment && state.apartment.marker) {
+                markersLayer.removeLayer(state.apartment.marker);
+            }
+            var aptMarker = L.marker([point.lat, point.lon], {
+                icon: L.icon({
+                    iconUrl: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 32]
+                })
+            }).addTo(markersLayer);
+            aptMarker.bindPopup("<b>Апартаменты:</b><br>" + point.name);
+            state.apartment = {
+                name: point.name,
+                lat: point.lat,
+                lon: point.lon,
+                marker: aptMarker
+            };
+            updateSavedPointsUI();
+            if (save) saveState();
+        }
+        function addAttraction(point, save = true) {
+            var marker = L.marker([point.lat, point.lon]).addTo(markersLayer);
+            marker.bindPopup("<b>" + point.name + "</b>");
+            state.attractions.push({
+                name: point.name,
+                lat: point.lat,
+                lon: point.lon,
+                marker: marker
+            });
+            updateSavedPointsUI();
+            if (save) saveState();
+        }
+
+        /*******************************
+         * Автопоиск с подсказками (debounce)
+         *******************************/
+        var searchTimeout = null;
+        function doSearch() {
+            var query = document.getElementById("searchInput").value;
+            var country = document.getElementById("countryFilter").value.trim();
+            if (!query) {
+                document.getElementById("searchResults").innerHTML = "";
+                return;
+            }
+            var finalQuery = query;
+            if (country) {
+                finalQuery += ", " + country;
+            }
+            var url = "https://nominatim.openstreetmap.org/search?format=json&q=" + encodeURIComponent(finalQuery);
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    var resultsDiv = document.getElementById("searchResults");
+                    resultsDiv.innerHTML = "";
+                    data.forEach(function (item) {
+                        var div = document.createElement("div");
+                        div.className = "result-item";
+                        div.innerHTML = item.display_name;
+                        div.addEventListener("click", function () {
+                            var point = {
+                                name: item.display_name,
+                                lat: parseFloat(item.lat),
+                                lon: parseFloat(item.lon)
+                            };
+                            var pointType = document.getElementById("pointType").value;
+                            if (pointType === "apartment") {
+                                setApartment(point);
+                            } else {
+                                addAttraction(point);
+                            }
+                            resultsDiv.innerHTML = "";
+                        });
+                        resultsDiv.appendChild(div);
+                    });
+                })
+                .catch(err => console.error(err));
+        }
+        document.getElementById("searchInput").addEventListener("input", function () {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(doSearch, 300);
+        });
+        document.getElementById("countryFilter").addEventListener("input", function () {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(doSearch, 300);
+        });
+        document.getElementById("searchButton").addEventListener("click", doSearch);
+
+        /*******************************
+         * Функция расчёта расстояния (метод гаверсинусов)
+         *******************************/
+        function haversineDistance(lat1, lon1, lat2, lon2) {
+            function toRad(x) { return x * Math.PI / 180; }
+            var R = 6371;
+            var dLat = toRad(lat2 - lat1);
+            var dLon = toRad(lon2 - lon1);
+            var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        /*******************************
+         * K-means кластеризация
+         *******************************/
+        function kmeans(points, k) {
+            if (points.length < k) { k = points.length; }
+            var centroids = [];
+            var usedIndices = new Set();
+            while (centroids.length < k) {
+                var idx = Math.floor(Math.random() * points.length);
+                if (!usedIndices.has(idx)) {
+                    usedIndices.add(idx);
+                    centroids.push({ lat: points[idx].lat, lon: points[idx].lon });
+                }
+            }
+            var clusters = [];
+            var iterations = 10;
+            for (var iter = 0; iter < iterations; iter++) {
+                clusters = Array.from({ length: k }, () => []);
+                points.forEach(function (p) {
+                    var bestIndex = 0;
+                    var bestDist = Infinity;
+                    for (var i = 0; i < k; i++) {
+                        var d = haversineDistance(p.lat, p.lon, centroids[i].lat, centroids[i].lon);
+                        if (d < bestDist) {
+                            bestDist = d;
+                            bestIndex = i;
+                        }
+                    }
+                    clusters[bestIndex].push(p);
+                });
+                for (var i = 0; i < k; i++) {
+                    if (clusters[i].length > 0) {
+                        var sumLat = 0, sumLon = 0;
+                        clusters[i].forEach(function (p) {
+                            sumLat += p.lat;
+                            sumLon += p.lon;
+                        });
+                        centroids[i].lat = sumLat / clusters[i].length;
+                        centroids[i].lon = sumLon / clusters[i].length;
+                    }
+                }
+            }
+            return clusters;
+        }
+
+        /*******************************
+         * Сортировка точек (ближайший сосед)
+         *******************************/
+        function orderAttractionsNearestNeighbor(start, attractions) {
+            var ordered = [];
+            var current = { lat: start.lat, lon: start.lon };
+            var remaining = attractions.slice();
+            while (remaining.length > 0) {
+                var nearestIndex = 0;
+                var nearestDistance = Infinity;
+                for (var i = 0; i < remaining.length; i++) {
+                    var d = haversineDistance(current.lat, current.lon, remaining[i].lat, remaining[i].lon);
+                    if (d < nearestDistance) {
+                        nearestDistance = d;
+                        nearestIndex = i;
+                    }
+                }
+                var next = remaining.splice(nearestIndex, 1)[0];
+                ordered.push(next);
+                current = { lat: next.lat, lon: next.lon };
+            }
+            return ordered;
+        }
+
+        /*******************************
+         * Подсветка маршрута по выбранному дню
+         *******************************/
+        function highlightRoute(dayIndex) {
+            dayRoutes.forEach(function (layer, idx) {
+                if (layer) {
+                    layer.setStyle({ weight: 4, opacity: 0.7 });
+                }
+            });
+            var selectedLayer = dayRoutes[dayIndex];
+            if (selectedLayer) {
+                selectedLayer.setStyle({ weight: 8, opacity: 1.0 });
+                selectedLayer.bringToFront();
+            }
+        }
+
+        /*******************************
+         * Планирование маршрута (кластеризация, сортировка и сохранение маршрутов)
+         *******************************/
+        // document.getElementById("planButton").addEventListener("click", function () {
+        //     routesLayer.clearLayers();
+        //     document.getElementById("itineraryDetails").innerHTML = "";
+        //     dayRoutes = [];
+        //     savedRoutes = [];
+
+        //     if (!state.apartment) {
+        //         alert("Сначала задайте ваши апартаменты!");
+        //         return;
+        //     }
+        //     if (state.attractions.length === 0) {
+        //         alert("Нет добавленных точек интереса!");
+        //         return;
+        //     }
+
+        //     var days = parseInt(document.getElementById("daysInput").value);
+        //     if (isNaN(days) || days < 1) {
+        //         alert("Введите корректное число дней!");
+        //         return;
+        //     }
+
+        //     var clustersCount = Math.min(days, state.attractions.length);
+        //     var clusters = kmeans(state.attractions, clustersCount);
+        //     var colors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEEAD", "#D4A5A5", "#9B59B6"];
+
+        //     clusters.forEach(function (cluster, index) {
+        //         if (cluster.length === 0) return;
+        //         var ordered = orderAttractionsNearestNeighbor(state.apartment, cluster);
+        //         var coords = [];
+        //         coords.push(state.apartment.lon + "," + state.apartment.lat);
+        //         ordered.forEach(function (pt) {
+        //             coords.push(pt.lon + "," + pt.lat);
+        //         });
+        //         coords.push(state.apartment.lon + "," + state.apartment.lat);
+        //         var coordStr = coords.join(";");
+        //         var url = "https://router.project-osrm.org/route/v1/driving/" + coordStr + "?overview=full&geometries=geojson";
+
+        //         (function (dayIndex) {
+        //             fetch(url)
+        //                 .then(response => response.json())
+        //                 .then(function (data) {
+        //                     if (data.code !== "Ok") {
+        //                         console.error("Ошибка при построении маршрута для дня " + (dayIndex + 1));
+        //                         return;
+        //                     }
+        //                     var routeGeoJSON = data.routes[0].geometry;
+        //                     var color = colors[dayIndex % colors.length];
+        //                     var routeLayer = L.geoJSON(routeGeoJSON, {
+        //                         style: { color: color, weight: 4, opacity: 0.7 }
+        //                     }).addTo(routesLayer);
+        //                     dayRoutes[dayIndex] = routeLayer;
+
+        //                     var distanceKm = data.routes[0].distance / 1000;
+        //                     var durationMin = data.routes[0].duration / 60;
+        //                     var cost = distanceKm * 0.5;
+
+        //                     var routeObj = {
+        //                         day: dayIndex + 1,
+        //                         geojson: data.routes[0].geometry,
+        //                         color: color,
+        //                         distance: distanceKm,
+        //                         duration: durationMin,
+        //                         cost: cost,
+        //                         pointsCount: ordered.length
+        //                     };
+        //                     savedRoutes.push(routeObj);
+        //                     saveRoutes();
+
+        //                     var itineraryDiv = document.getElementById("itineraryDetails");
+        //                     var dayDiv = document.createElement("div");
+        //                     dayDiv.className = "itinerary-day";
+        //                     dayDiv.style.borderLeft = `4px solid ${color}`;
+
+        //                     // Создаем список мест для этого дня
+        //                     var placesList = ordered.map((place, idx) =>
+        //                         `${idx + 1}. ${place.name}`
+        //                     ).join('<br>');
+
+        //                     dayDiv.innerHTML = `
+        //                         <div class="day-header">
+        //                             <b>День ${dayIndex + 1}:</b>
+        //                             <div class="day-stats">
+        //                                 Точек: ${ordered.length}<br>
+        //                                 Расстояние: ${distanceKm.toFixed(2)} км<br>
+        //                                 Время в пути: ${durationMin.toFixed(0)} мин<br>
+        //                                 Примерная стоимость: $${cost.toFixed(2)}
+        //                             </div>
+        //                         </div>
+        //                         <div class="places-list">
+        //                             <b>Места:</b><br>
+        //                             ${placesList}
+        //                         </div>
+        //                     `;
+
+        //                     // Добавляем стили для нового формата
+        //                     var style = document.createElement('style');
+        //                     style.textContent = `
+        //                         .day-header {
+        //                             display: flex;
+        //                             justify-content: space-between;
+        //                             margin-bottom: 10px;
+        //                         }
+        //                         .day-stats {
+        //                             text-align: right;
+        //                             font-size: 0.9em;
+        //                         }
+        //                         .places-list {
+        //                             background-color: #f8f9fa;
+        //                             padding: 10px;
+        //                             border-radius: 4px;
+        //                             margin-top: 10px;
+        //                             font-size: 0.9em;
+        //                         }
+        //                         .itinerary-day {
+        //                             padding: 15px;
+        //                             margin-bottom: 15px;
+        //                             background-color: white;
+        //                             border-radius: 8px;
+        //                             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        //                         }
+        //                         .itinerary-day:hover {
+        //                             transform: translateY(-2px);
+        //                             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        //                         }
+        //                     `;
+        //                     document.head.appendChild(style);
+
+        //                     dayDiv.addEventListener("click", function () {
+        //                         highlightRoute(dayIndex);
+        //                     });
+        //                     itineraryDiv.appendChild(dayDiv);
+        //                 })
+        //                 .catch(function (err) {
+        //                     console.error(err);
+        //                 });
+        //         })(index);
+        //     });
+        // });
+
+        let currentDate = new Date();
+        let selectedDate = null;
+
+        function updateCalendar() {
+            const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+                'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+            const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+            document.getElementById('currentMonth').textContent =
+                `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+
+            const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
+            let calendarHTML = dayNames.map(day =>
+                `<div class="calendar-day header">${day}</div>`
+            ).join('');
+
+            const startOffset = firstDay.getDay() || 7;
+            for (let i = 1; i < startOffset; i++) {
+                calendarHTML += '<div class="calendar-day"></div>';
+            }
+
+            for (let i = 1; i <= lastDay.getDate(); i++) {
+                const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), i);
+                const isSelected = selectedDate &&
+                    date.toDateString() === selectedDate.toDateString();
+                calendarHTML += `
+                    <div class="calendar-day ${isSelected ? 'selected' : ''}" 
+                         onclick="selectDate(${i})">${i}</div>
+                `;
+            }
+
+            document.getElementById('calendarGrid').innerHTML = calendarHTML;
+        }
+
+        function selectDate(day) {
+            selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+            updateCalendar();
+            addDay();
+        }
+
+        function prevMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            updateCalendar();
+        }
+
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            updateCalendar();
+        }
+
+        function formatDate(date) {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString('ru-RU', options);
+        }
+
+        function addDay() {
+            const datePicker = document.createElement('div');
+            datePicker.className = 'date-picker';
+            datePicker.innerHTML = `
+                <input type="date" id="selectedDate">
+                <div class="date-picker-buttons">
+                    <button class="cancel" onclick="closeDatePicker()">Отмена</button>
+                    <button class="confirm" onclick="confirmAddDay()">Добавить</button>
+                </div>
+            `;
+            document.body.appendChild(datePicker);
+            datePicker.style.display = 'block';
+        }
+
+        function closeDatePicker() {
+            const datePicker = document.querySelector('.date-picker');
+            if (datePicker) {
+                datePicker.remove();
+            }
+        }
+
+        function confirmAddDay() {
+            const dateInput = document.getElementById('selectedDate');
+            if (!dateInput.value) {
+                alert('Пожалуйста, выберите дату');
+                return;
+            }
+
+            const date = new Date(dateInput.value);
+            const container = document.getElementById('scheduleContainer');
+            const dayIndex = container.children.length;
+
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'schedule-day';
+            dayDiv.innerHTML = `
+                <div class="schedule-day-header" onclick="toggleDay(${dayIndex})">
+                    <div class="day-title">${formatDate(date)}</div>
+                    <button class="delete-btn" onclick="removeDay(${dayIndex})">×</button>
+                </div>
+                <div class="schedule-day-content">
+                    <div class="time-input-group">
+                        <input type="time" class="time-input" id="time${dayIndex}" value="09:00">
+                        <select class="place-selector" id="place${dayIndex}">
+                            <option value="">-- Выберите место --</option>
+                            ${state.attractions.map((att, idx) => `
+                                <option value="${idx}">${att.name}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <button class="add-plan-btn" onclick="addPlanItem(${dayIndex})">Добавить в план</button>
+                    <div class="day-plan" id="dayPlan${dayIndex}">
+                        <div class="plan-list"></div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(dayDiv);
+            closeDatePicker();
+            savePlannerState();
+        }
+
+        function addPlanItem(dayIndex) {
+            const timeInput = document.getElementById(`time${dayIndex}`);
+            const placeSelect = document.getElementById(`place${dayIndex}`);
+            const planList = document.querySelector(`#dayPlan${dayIndex} .plan-list`);
+
+            const time = timeInput.value;
+            const placeIndex = parseInt(placeSelect.value);
+
+            if (placeIndex >= 0) {
+                const place = state.attractions[placeIndex];
+                const planItem = document.createElement('div');
+                planItem.className = 'plan-item';
+                planItem.innerHTML = `
+                    <div class="plan-time">${time}</div>
+                    <div class="plan-place">${place.name}</div>
+                    <div class="plan-actions">
+                        <button class="delete-btn" onclick="removePlanItem(${dayIndex}, this)">×</button>
+                    </div>
+                `;
+                planItem.onclick = () => focusOnPoint(placeIndex);
+                planList.appendChild(planItem);
+
+                updateRoute(dayIndex);
+                savePlannerState();
+            }
+        }
+
+        function removePlanItem(dayIndex, button) {
+            const planItem = button.closest('.plan-item');
+            planItem.remove();
+            updateRoute(dayIndex);
+            savePlannerState();
+        }
+
+        function updateRoute(dayIndex) {
+            const planList = document.querySelector(`#dayPlan${dayIndex} .plan-list`);
+            const items = planList.querySelectorAll('.plan-item');
+
+            if (items.length === 0) return;
+
+            // Собираем координаты в порядке времени
+            let coords = [];
+            if (state.apartment) {
+                coords.push(`${state.apartment.lon},${state.apartment.lat}`);
+            }
+
+            Array.from(items).sort((a, b) => {
+                const timeA = a.querySelector('.plan-time').textContent;
+                const timeB = b.querySelector('.plan-time').textContent;
+                return timeA.localeCompare(timeB);
+            }).forEach(item => {
+                const placeName = item.querySelector('.plan-place').textContent;
+                const place = state.attractions.find(att => att.name === placeName);
+                if (place) {
+                    coords.push(`${place.lon},${place.lat}`);
+                }
+            });
+
+            if (state.apartment) {
+                coords.push(`${state.apartment.lon},${state.apartment.lat}`);
+            }
+
+            const coordStr = coords.join(';');
+            const url = `https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code !== "Ok") return;
+
+                    const color = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+                    const routeLayer = L.geoJSON(data.routes[0].geometry, {
+                        style: { color: color, weight: 4, opacity: 0.7 }
+                    });
+
+                    const oldLayer = dayRoutes[dayIndex];
+                    if (oldLayer) {
+                        routesLayer.removeLayer(oldLayer);
+                    }
+
+                    routeLayer.addTo(routesLayer);
+                    dayRoutes[dayIndex] = routeLayer;
+                })
+                .catch(error => {
+                    console.error('Ошибка при построении маршрута:', error);
+                });
+        }
+
+        function removeDay(index) {
+            if (confirm('Вы уверены, что хотите удалить этот день?')) {
+                const container = document.getElementById('scheduleContainer');
+
+                // Удаляем маршрут из карты
+                if (dayRoutes[index]) {
+                    routesLayer.removeLayer(dayRoutes[index]);
+                    dayRoutes.splice(index, 1);
+                }
+
+                // Удаляем день из DOM
+                container.children[index].remove();
+
+                // Обновляем индексы оставшихся дней
+                Array.from(container.children).forEach((day, i) => {
+                    const dayTitle = day.querySelector('.day-title');
+                    if (dayTitle) {
+                        dayTitle.textContent = dayTitle.textContent.replace(/День \d+/, `День ${i + 1}`);
+                    }
+                });
+
+                // Сохраняем обновленное состояние
+                savePlannerState();
+            }
+        }
+
+        function focusOnPoint(index, isApartment = false) {
+            let point;
+            if (isApartment) {
+                point = state.apartment;
+            } else {
+                point = state.attractions[index];
+            }
+
+            if (point && point.lat && point.lon) {
+                // Получаем текущий масштаб карты
+                const currentZoom = map.getZoom();
+                // Центрируем карту на точке, сохраняя текущий масштаб
+                map.setView([point.lat, point.lon], currentZoom);
+                if (point.marker) {
+                    point.marker.openPopup();
+                }
+            }
+        }
+
+        function savePlannerState() {
+            const scheduleContainer = document.getElementById('scheduleContainer');
+            if (!scheduleContainer) return;
+
+            const days = Array.from(scheduleContainer.children).map(day => {
+                const dayTitle = day.querySelector('.day-title').textContent;
+                const planItems = Array.from(day.querySelectorAll('.plan-item')).map(item => ({
+                    time: item.querySelector('.plan-time').textContent,
+                    place: item.querySelector('.plan-place').textContent
+                }));
+                return {
+                    title: dayTitle,
+                    items: planItems
+                };
+            });
+
+            localStorage.setItem('plannerState', JSON.stringify(days));
+            console.log('Состояние сохранено:', days);
+        }
+
+        function loadPlannerState() {
+            const savedState = localStorage.getItem('plannerState');
+            console.log('Загруженное состояние:', savedState);
+
+            if (!savedState) return;
+
+            try {
+                const days = JSON.parse(savedState);
+                const container = document.getElementById('scheduleContainer');
+                if (!container) return;
+
+                container.innerHTML = '';
+                days.forEach((day, index) => {
+                    const dayDiv = document.createElement('div');
+                    dayDiv.className = 'schedule-day';
+                    dayDiv.innerHTML = `
+                        <div class="schedule-day-header" onclick="toggleDay(${index})">
+                            <div class="day-title">${day.title}</div>
+                            <button class="delete-btn" onclick="removeDay(${index})">×</button>
+                        </div>
+                        <div class="schedule-day-content">
+                            <div class="time-input-group">
+                                <input type="time" class="time-input" id="time${index}" value="09:00">
+                                <select class="place-selector" id="place${index}">
+                                    <option value="">-- Выберите место --</option>
+                                    ${state.attractions.map((att, idx) => `
+                                        <option value="${idx}">${att.name}</option>
+                                    `).join('')}
+                                </select>
+                            </div>
+                            <button class="add-plan-btn" onclick="addPlanItem(${index})">Добавить в план</button>
+                            <div class="day-plan" id="dayPlan${index}">
+                                <div class="plan-list">
+                                    ${day.items.map(item => {
+                        const placeIndex = state.attractions.findIndex(att => att.name === item.place);
+                        return `
+                                            <div class="plan-item" onclick="focusOnPoint(${placeIndex})">
+                                                <div class="plan-time">${item.time}</div>
+                                                <div class="plan-place">${item.place}</div>
+                                                <div class="plan-actions">
+                                                    <button class="delete-btn" onclick="removePlanItem(${index}, this)">×</button>
+                                                </div>
+                                            </div>
+                                        `;
+                    }).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(dayDiv);
+                });
+            } catch (e) {
+                console.error('Ошибка при загрузке состояния планировщика:', e);
+            }
+        }
+
+        /*******************************
+         * При загрузке страницы: восстанавливаем точки и маршруты
+         *******************************/
+        window.onload = function () {
+            loadState();
+            loadRoutesFromStorage();
+            setTimeout(() => {
+                loadPlannerState();
+            }, 100);
+        };
+
+        // Удаляем старые функции и добавляем кнопку добавления дня
+        document.addEventListener('DOMContentLoaded', function () {
+            // Удаляем старый календарь и планирование маршрута
+            const oldCalendar = document.querySelector('.calendar-container');
+            const oldPlanning = document.querySelector('h3');
+            const oldPlanningSection = oldPlanning ? oldPlanning.nextElementSibling : null;
+
+            if (oldCalendar) {
+                oldCalendar.remove();
+            }
+            if (oldPlanning && oldPlanning.textContent === 'Планирование маршрута') {
+                oldPlanning.remove();
+                if (oldPlanningSection) {
+                    oldPlanningSection.remove();
+                }
+            }
+
+            const addDayButton = document.createElement('button');
+            addDayButton.className = 'add-day-btn';
+            addDayButton.innerHTML = '+';
+            addDayButton.onclick = addDay;
+            document.body.appendChild(addDayButton);
+        });
+    </script>
+</body>
+
+</html>
